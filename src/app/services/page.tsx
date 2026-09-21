@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { StaticHomeRedirect } from "@/components/StaticHomeRedirect";
 
 export default function ServicesRedirect() {
-  redirect("/");
+  return <StaticHomeRedirect />;
 }

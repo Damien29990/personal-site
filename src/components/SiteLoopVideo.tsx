@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { withBasePath } from "@/lib/paths";
 import { site } from "@/content/site";
 
 type Drag = {
@@ -135,7 +136,7 @@ export function SiteLoopVideo() {
           <video
             ref={videoRef}
             className="h-full w-full object-cover"
-            src={site.heroLoop.src}
+            src={withBasePath(site.heroLoop.src)}
             muted
             loop
             playsInline

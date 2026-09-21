@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { StaticHomeRedirect } from "@/components/StaticHomeRedirect";
 
 export default function ContactRedirect() {
-  redirect("/#contact");
+  return <StaticHomeRedirect hash="#contact" />;
 }
