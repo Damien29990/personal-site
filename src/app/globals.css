@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display-face);
+  --color-bg: #f4f1ea;
+  --color-fg: #0f172a;
+  --color-muted: #334155;
+  --color-accent: #ff5500;
+  --color-accent-fg: #f7f5f0;
+  --color-yellow: #ffd000;
+  --color-yellow-fg: #111827;
+  --color-line: #e2ded4;
+  --color-surface: #f7f5f0;
+}
+
+:root {
+  --bg: var(--color-bg);
+  --fg: var(--color-fg);
+  --fg-muted: var(--color-muted);
+  --accent: var(--color-accent);
+  --accent-fg: var(--color-accent-fg);
+  --yellow: var(--color-yellow);
+  --line: var(--color-line);
+  --surface: var(--color-surface);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans), "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+::selection {
+  background: #ffd000;
+  color: #111827;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.font-display {
+  font-family: var(--font-display), "Barlow Condensed", ui-sans-serif, sans-serif;
+  font-weight: 600;
+}
+
+.artifact-stage {
+  background-color: var(--surface);
+  background-image:
+    radial-gradient(60% 60% at 50% 45%, rgb(255 85 0 / 0.08) 0%, transparent 70%),
+    linear-gradient(to right, rgb(15 23 42 / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(15 23 42 / 0.05) 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    24px 24px,
+    24px 24px;
+}
+
+.blueprint-grid {
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(to right, rgb(15 23 42 / 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(15 23 42 / 0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

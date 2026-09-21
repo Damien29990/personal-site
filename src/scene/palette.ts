@@ -1,0 +1,16 @@
+export const palette = {
+  paper: "#F4F1EA",
+  sand: "#E6DFD0",
+  pad: "#DDD6C6",
+  slab: "#C9C3B6",
+  column: "#0F172A",
+  scaffold: "#334155",
+  steel: "#1E293B",
+  crane: "#FF5500",
+  cabin: "#F7F5F0",
+  roof: "#FF5500",
+  fence: "#D8D2C4",
+  pallet: "#B45309",
+  sensor: "#FF5500",
+  hop: "#FF5500",
+} as const;
