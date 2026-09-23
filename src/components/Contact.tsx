@@ -9,7 +9,7 @@ export function Contact() {
       className="scroll-mt-24 px-6 py-20 md:px-8 md:py-28"
     >
       <div className="mx-auto max-w-6xl">
-        <SectionHeading id="contact-heading" index="04">
+        <SectionHeading id="contact-heading" index="05">
           Contact / specifications
         </SectionHeading>
         <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted">{site.contact.body}</p>
@@ -29,7 +29,7 @@ export function Contact() {
               {row.href ? (
                 <a
                   href={row.href}
-                  className="px-4 py-3 text-sm underline-offset-4 hover:underline"
+                  className="link-line px-4 py-3 text-sm"
                   target="_blank"
                   rel="noreferrer"
                 >

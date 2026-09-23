@@ -9,15 +9,19 @@ export function Experience() {
       className="scroll-mt-24 px-6 py-20 md:px-8 md:py-28"
     >
       <div className="mx-auto max-w-6xl">
-        <SectionHeading id="experience-heading" index="02">
+        <SectionHeading id="experience-heading" index="03">
           Experience & deployments
         </SectionHeading>
         <ul className="mt-10">
           {site.experience.map((role) => (
             <li
               key={`${role.company}-${role.title}`}
-              className="grid gap-2 border-t border-line py-8 md:grid-cols-12"
+              className="group relative grid gap-2 border-t border-line py-8 md:grid-cols-12"
             >
+              <span
+                aria-hidden="true"
+                className="absolute top-0 left-0 h-full w-0.5 origin-top scale-y-0 bg-accent transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-y-100"
+              />
               <p className="font-display text-sm uppercase tracking-[0.12em] text-muted md:col-span-3">
                 {role.dates}
               </p>

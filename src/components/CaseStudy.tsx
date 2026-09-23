@@ -7,10 +7,14 @@ type CaseStudyProps = {
 
 export function CaseStudy({ work, featured = false }: CaseStudyProps) {
   return (
-    <article className="grid items-start gap-10 border-t border-line py-16 md:grid-cols-12 md:py-20">
+    <article className="group relative grid items-start gap-10 border-t border-line py-16 md:grid-cols-12 md:py-20">
+      <span
+        aria-hidden="true"
+        className="absolute top-0 left-0 h-full w-0.5 origin-top scale-y-0 bg-accent transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-y-100"
+      />
       <div className={featured ? "md:col-span-7" : "md:col-span-5 md:col-start-1"}>
         <div
-          className={`flex aspect-[16/10] flex-col justify-between border bg-surface p-6 md:p-8 ${featured ? "border-accent" : "border-fg"}`}
+          className={`flex aspect-[16/10] flex-col justify-between border bg-surface p-6 transition-[border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] md:p-8 ${featured ? "border-accent" : "border-fg group-hover:border-accent"}`}
         >
           <p className="font-display text-[11px] uppercase tracking-[0.16em] text-accent">
             {work.eyebrow}

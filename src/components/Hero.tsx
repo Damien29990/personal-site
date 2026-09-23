@@ -14,12 +14,16 @@ export function Hero() {
         </div>
 
         <div className="mt-10 text-center md:mt-14">
-          <p className="font-display text-[11px] uppercase tracking-[0.2em] text-accent">
-            {site.identity}
-          </p>
-          <h1 className="mt-4 font-display text-[clamp(3.25rem,13vw,9rem)] uppercase leading-[0.85] tracking-tight">
-            {site.name}
-          </h1>
+          <div className="hero-in">
+            <p className="font-display text-[11px] uppercase tracking-[0.2em] text-accent">
+              {site.identity}
+            </p>
+          </div>
+          <div className="hero-in mt-4" style={{ animationDelay: "90ms" }}>
+            <h1 className="font-display text-[clamp(3.25rem,13vw,9rem)] uppercase leading-[0.85] tracking-tight">
+              {site.name}
+            </h1>
+          </div>
         </div>
 
         <div className="relative z-10 mx-auto mt-6 max-w-4xl md:-mt-4">
@@ -27,11 +31,13 @@ export function Hero() {
         </div>
 
         <div className="mx-auto mt-10 max-w-xl text-center md:mt-12">
-          <p className="text-base leading-relaxed text-muted md:text-lg">{site.proof}</p>
+          <div className="hero-in" style={{ animationDelay: "160ms" }}>
+            <p className="text-base leading-relaxed text-muted md:text-lg">{site.proof}</p>
+          </div>
           <div className="mt-8 flex justify-center">
             <a
               href="#work"
-              className="inline-flex min-h-11 items-center bg-accent px-6 font-display text-sm uppercase tracking-[0.16em] text-accent-fg transition-opacity duration-200 hover:opacity-90"
+              className="inline-flex min-h-11 items-center bg-accent px-6 font-display text-sm uppercase tracking-[0.16em] text-accent-fg transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px hover:opacity-90"
             >
               View selected works
             </a>

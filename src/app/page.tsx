@@ -2,6 +2,7 @@ import { About } from "@/components/About";
 import { Contact } from "@/components/Contact";
 import { Experience } from "@/components/Experience";
 import { Hero } from "@/components/Hero";
+import { PastProjects } from "@/components/PastProjects";
 import { SelectedWork } from "@/components/SelectedWork";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteNav } from "@/components/SiteNav";
@@ -19,6 +20,7 @@ export default function Home() {
       <main id="main">
         <Hero />
         <SelectedWork />
+        <PastProjects />
         <Experience />
         <About />
         <Contact />

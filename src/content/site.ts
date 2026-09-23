@@ -13,6 +13,7 @@ export const site = {
   },
   nav: [
     { label: "Works", href: "#work" },
+    { label: "Projects", href: "#projects" },
     { label: "Experience", href: "#experience" },
     { label: "About", href: "#about" },
     { label: "Contact", href: "#contact" },
@@ -50,6 +51,38 @@ export const site = {
       result:
         "Site staff can see which sensors are speaking and which alerts need a walk, without opening a spreadsheet first.",
       stack: ["React", "JavaScript", "Vercel"],
+    },
+  ],
+  projects: [
+    {
+      slug: "anshin",
+      index: "01",
+      name: "Anshin",
+      type: "Frontend UI project",
+      description:
+        "A Vue interface study from the old work gallery — layout, components, and how the screen feels in use.",
+      stack: ["Vue"],
+      image: "/projects/anshin.png",
+    },
+    {
+      slug: "wordle",
+      index: "02",
+      name: "Wordle",
+      type: "Web game project",
+      description:
+        "A browser Wordle-style game, built to practise HTML and front-end interaction.",
+      stack: ["HTML"],
+      image: "/projects/wordle.png",
+    },
+    {
+      slug: "bonsai",
+      index: "03",
+      name: "Bonsai",
+      type: "Frontend project",
+      description:
+        "A recreation of the Bonsai homepage to practise HTML, CSS, and JavaScript.",
+      stack: ["HTML", "CSS", "JavaScript"],
+      image: "/projects/bonsai.png",
     },
   ],
   experience: [
@@ -144,4 +177,5 @@ export const site = {
 } as const;
 
 export type WorkItem = (typeof site.work)[number];
+export type ProjectItem = (typeof site.projects)[number];
 export type ExperienceItem = (typeof site.experience)[number];

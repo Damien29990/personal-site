@@ -10,7 +10,7 @@ export function About() {
     >
       <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-12">
         <div className="md:col-span-5">
-          <SectionHeading id="about-heading" index="03">
+          <SectionHeading id="about-heading" index="04">
             About & methodology
           </SectionHeading>
         </div>

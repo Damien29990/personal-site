@@ -27,7 +27,7 @@ export function SiteNav() {
             <a
               key={item.href}
               href={item.href}
-              className="font-display text-sm uppercase tracking-[0.14em] text-muted transition-opacity duration-200 hover:text-fg"
+              className="link-line font-display text-sm uppercase tracking-[0.14em] text-muted transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:text-fg"
             >
               {item.label}
             </a>
@@ -58,7 +58,7 @@ export function SiteNav() {
               <a
                 key={item.href}
                 href={item.href}
-                className="flex min-h-11 items-center font-display text-sm uppercase tracking-[0.14em]"
+                className="link-line flex min-h-11 w-fit items-center font-display text-sm uppercase tracking-[0.14em]"
                 onClick={() => setOpen(false)}
               >
                 {item.label}
