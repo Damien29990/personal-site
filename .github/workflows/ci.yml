@@ -21,7 +21,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Match the runner's supported Node line; Actions is deprecating Node 20.
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
@@ -38,6 +39,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # Typecheck before build is intentional: `LayoutProps` and other Next-
+      # generated types must not be required for a clean-clone typecheck.
       - name: Typecheck
         run: npm run typecheck
 
