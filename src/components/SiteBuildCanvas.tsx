@@ -15,19 +15,30 @@ export default function SiteBuildCanvas({ onReady, onUnavailable }: SiteBuildCan
     const host = hostRef.current;
     if (!host) return;
 
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      onUnavailable();
-      return;
-    }
+    let handle: SiteSceneHandle | null = null;
+    let cancelled = false;
 
-    const handle = createSiteScene(host);
-    if (!handle) {
-      onUnavailable();
-      return;
-    }
+    void createSiteScene(host)
+      .then((next) => {
+        if (cancelled) {
+          next?.dispose();
+          return;
+        }
+        if (!next) {
+          onUnavailable();
+          return;
+        }
+        handle = next;
+        onReady(next);
+      })
+      .catch(() => {
+        if (!cancelled) onUnavailable();
+      });
 
-    onReady(handle);
-    return () => handle.dispose();
+    return () => {
+      cancelled = true;
+      handle?.dispose();
+    };
   }, [onReady, onUnavailable]);
 
   return <div ref={hostRef} className="h-full w-full" aria-hidden="true" />;

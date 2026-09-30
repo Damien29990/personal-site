@@ -42,7 +42,7 @@ export function PastProjects() {
         </SectionHeading>
         <Reveal className="mt-3 max-w-2xl">
           <p className="text-muted">
-            The public gallery from the earlier site — practice work kept as a trail, not as selected case studies.
+            Practice pieces from the earlier public gallery — kept as a trail. The selected works above are the hiring argument.
           </p>
         </Reveal>
         <div className="mt-10 grid gap-10 md:grid-cols-3">

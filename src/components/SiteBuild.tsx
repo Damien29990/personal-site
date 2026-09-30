@@ -20,8 +20,9 @@ const SiteBuildCanvas = dynamic(() => import("./SiteBuildCanvas"), {
 
 type Drag = {
   x: number;
-  time: number;
-  moved: boolean;
+  y: number;
+  yaw: number;
+  pitch: number;
 };
 
 function clock(seconds: number): string {
@@ -38,16 +39,15 @@ export function SiteBuild() {
   const barRef = useRef<HTMLSpanElement>(null);
   const timeRef = useRef<HTMLSpanElement>(null);
   const dragRef = useRef<Drag | null>(null);
-  const resumeRef = useRef(true);
+  const pointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchRef = useRef<{ distance: number; zoom: number } | null>(null);
 
   const [stageIndex, setStageIndex] = useState(0);
-  const [running, setRunning] = useState(true);
   const [available, setAvailable] = useState<boolean | null>(null);
 
   const onReady = useCallback((handle: SiteSceneHandle) => {
     handleRef.current = handle;
     setAvailable(true);
-    setRunning(handle.isRunning());
 
     unsubscribeRef.current?.();
     unsubscribeRef.current = handle.onTick((seconds, stage) => {
@@ -72,46 +72,73 @@ export function SiteBuild() {
     [],
   );
 
-  const run = (next: boolean) => {
-    handleRef.current?.setRunning(next);
-    setRunning(next);
-  };
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+
+    const onWheel = (event: WheelEvent) => {
+      const handle = handleRef.current;
+      if (!handle) return;
+      event.preventDefault();
+      const next = handle.getZoom() * (event.deltaY > 0 ? 0.92 : 1.08);
+      handle.setZoom(next);
+    };
+
+    host.addEventListener("wheel", onWheel, { passive: false });
+    return () => host.removeEventListener("wheel", onWheel);
+  }, [available]);
 
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     const handle = handleRef.current;
     if (!handle) return;
 
     event.currentTarget.setPointerCapture(event.pointerId);
-    resumeRef.current = handle.isRunning();
-    dragRef.current = { x: event.clientX, time: handle.getTime(), moved: false };
-    run(false);
+    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointersRef.current.size === 1) {
+      dragRef.current = {
+        x: event.clientX,
+        y: event.clientY,
+        yaw: handle.getYaw(),
+        pitch: handle.getPitch(),
+      };
+      pinchRef.current = null;
+    }
   };
 
   const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const drag = dragRef.current;
     const handle = handleRef.current;
-    if (!drag || !handle) return;
+    if (!handle || !pointersRef.current.has(event.pointerId)) return;
+    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
 
+    const points = [...pointersRef.current.values()];
+    if (points.length >= 2) {
+      const first = points[0];
+      const second = points[1];
+      if (!first || !second) return;
+      const distance = Math.hypot(first.x - second.x, first.y - second.y);
+      const pinch = pinchRef.current;
+      if (!pinch) {
+        pinchRef.current = { distance, zoom: handle.getZoom() };
+        return;
+      }
+      if (pinch.distance > 0) handle.setZoom(pinch.zoom * (distance / pinch.distance));
+      return;
+    }
+
+    const drag = dragRef.current;
+    if (!drag) return;
     const width = hostRef.current?.clientWidth ?? 1;
-    const delta = event.clientX - drag.x;
-    if (Math.abs(delta) > 3) drag.moved = true;
-    handle.setTime(drag.time + (delta / width) * handle.duration);
+    const height = hostRef.current?.clientHeight ?? 1;
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+    handle.setYaw(drag.yaw + (dx / width) * Math.PI * 2);
+    handle.setPitch(drag.pitch - (dy / height) * 1.1);
   };
 
-  const onPointerUp = () => {
-    const drag = dragRef.current;
-    dragRef.current = null;
-    if (!handleRef.current) return;
-
-    // A press with no travel is a click, so it toggles the pre-drag state.
-    run(drag?.moved ? resumeRef.current : !resumeRef.current);
-  };
-
-  const step = (seconds: number) => {
-    const handle = handleRef.current;
-    if (!handle) return;
-    run(false);
-    handle.setTime(handle.getTime() + seconds);
+  const onPointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+    pointersRef.current.delete(event.pointerId);
+    pinchRef.current = null;
+    if (pointersRef.current.size === 0) dragRef.current = null;
   };
 
   if (available === false) {
@@ -128,7 +155,7 @@ export function SiteBuild() {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        className="artifact-stage relative aspect-video w-full cursor-grab touch-pan-y select-none overflow-hidden border border-fg active:cursor-grabbing"
+        className="artifact-stage relative aspect-video w-full cursor-grab touch-none select-none overflow-hidden border border-fg active:cursor-grabbing"
       >
         <div className="absolute inset-0">
           <SiteBuildCanvas onReady={onReady} onUnavailable={onUnavailable} />
@@ -147,26 +174,8 @@ export function SiteBuild() {
           ref={timeRef}
           className="pointer-events-none absolute bottom-4 left-3 font-display text-[10px] uppercase tracking-[0.16em] text-muted"
         >
-          {`00:00 / 01:00`}
+          {`00:00 / 01:33`}
         </span>
-
-        <button
-          type="button"
-          onClick={() => run(!running)}
-          onKeyDown={(event) => {
-            if (event.key === "ArrowRight") {
-              event.preventDefault();
-              step(1);
-            }
-            if (event.key === "ArrowLeft") {
-              event.preventDefault();
-              step(-1);
-            }
-          }}
-          className="absolute right-3 bottom-4 min-h-9 border border-fg bg-bg px-3 font-display text-[10px] uppercase tracking-[0.16em]"
-        >
-          {running ? "Hold" : "Run"}
-        </button>
 
         <span
           className="pointer-events-none absolute bottom-0 left-0 h-[3px] w-full bg-line"

@@ -7,10 +7,8 @@ export function Hero() {
     <section className="border-b border-line px-6 pt-12 pb-16 md:px-8 md:pt-16 md:pb-24">
       <div className="mx-auto max-w-6xl">
         <div className="flex items-center justify-between border-b border-line pb-3 font-display text-[10px] uppercase tracking-[0.18em] text-muted">
-          <p>
-            {site.location} · {site.drawingId}
-          </p>
-          <p>{`Build cycle 0${LOOP_SECONDS / 60}:00`}</p>
+          <p>{site.location}</p>
+          <p>{`Build cycle ${String(Math.floor(LOOP_SECONDS / 60)).padStart(2, "0")}:${String(LOOP_SECONDS % 60).padStart(2, "0")}`}</p>
         </div>
 
         <div className="mt-10 text-center md:mt-14">

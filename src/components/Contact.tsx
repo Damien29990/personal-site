@@ -12,7 +12,10 @@ export function Contact() {
         <SectionHeading id="contact-heading" index="05">
           Contact / specifications
         </SectionHeading>
-        <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted">{site.contact.body}</p>
+        <p className="mt-4 max-w-xl font-display text-xl uppercase tracking-tight md:text-2xl">
+          {site.contact.heading}
+        </p>
+        <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted">{site.contact.body}</p>
         <div className="mt-10 border border-line">
           <div className="grid grid-cols-[8rem_1fr] border-b border-line bg-surface font-display text-[11px] uppercase tracking-[0.16em] text-muted md:grid-cols-[12rem_1fr]">
             <p className="border-r border-line px-4 py-3">Field</p>

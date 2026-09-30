@@ -14,7 +14,7 @@ export function SelectedWork() {
         </SectionHeading>
         <Reveal className="mt-3 max-w-2xl">
           <p className="text-muted">
-            Two surfaces of the same problem: keep a construction site honest while people are still on it.
+            Live IoT platforms for Hong Kong sites, then a local AI agent system for the next kind of work I want to own.
           </p>
         </Reveal>
         {featured ? <CaseStudy work={featured} featured /> : null}

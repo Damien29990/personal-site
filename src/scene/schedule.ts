@@ -1,7 +1,8 @@
 import type { Cell, TimedCell } from "@/scene/voxels";
 
-export const LOOP_SECONDS = 60;
-export const TEARDOWN_SECONDS = 2;
+/** 90s of construction, then a short reverse so the loop meets on an empty lot. */
+export const LOOP_SECONDS = 93;
+export const TEARDOWN_SECONDS = 3;
 export const BUILD_SECONDS = LOOP_SECONDS - TEARDOWN_SECONDS;
 
 export type Stage = {
@@ -12,12 +13,12 @@ export type Stage = {
 
 export const STAGES: readonly Stage[] = [
   { id: "setup", label: "Site setup", from: 0 },
-  { id: "foundation", label: "Foundation", from: 5 },
-  { id: "crane", label: "Crane erection", from: 12 },
-  { id: "structure", label: "Structure", from: 20 },
-  { id: "envelope", label: "Envelope", from: 42 },
-  { id: "facilities", label: "Site facilities", from: 48 },
-  { id: "iot", label: "IoT commissioning", from: 52 },
+  { id: "foundation", label: "Foundation", from: 10 },
+  { id: "crane", label: "Crane placed", from: 22 },
+  { id: "structure", label: "Structure", from: 32 },
+  { id: "envelope", label: "Nets and scaffold", from: 52 },
+  { id: "facilities", label: "Hoist and modules", from: 64 },
+  { id: "iot", label: "IoT commissioning", from: 76 },
   { id: "handover", label: "Handover", from: BUILD_SECONDS },
 ];
 
@@ -26,9 +27,8 @@ export function wrapTime(seconds: number): number {
 }
 
 /**
- * Build progress in seconds. Rises with the clock until the site is complete,
- * then runs backwards through the teardown window so t = 0 meets t = 60 on an
- * empty lot and the loop has no seam.
+ * Build progress in seconds. Rises until handover, then runs backwards through
+ * the teardown window so the loop has no seam.
  */
 export function revealTime(seconds: number): number {
   const t = wrapTime(seconds);
@@ -51,10 +51,7 @@ function radius(cell: Cell): number {
   return cell[0] * cell[0] + cell[2] * cell[2];
 }
 
-/**
- * Spreads a group of cells across a stage window and returns them sorted by
- * placement time, which is what the timed instancing relies on.
- */
+/** Kept for any voxel helper that still spreads cells across a window. */
 export function assignBuildTimes(
   cells: readonly Cell[],
   from: number,
