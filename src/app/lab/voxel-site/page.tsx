@@ -21,7 +21,7 @@ export default function VoxelSiteLabPage() {
       </a>
       <SiteNav />
       <main id="main">
-        <section className="border-b border-line px-6 pt-10 pb-14 md:px-8 md:pt-14 md:pb-20">
+        <section className="border-b border-line px-6 pt-6 pb-8 md:px-8 md:pt-8 md:pb-10">
           <div className="mx-auto max-w-6xl">
             <div className="flex items-center justify-between border-b border-line pb-3 font-display text-[10px] uppercase tracking-[0.18em] text-muted">
               <p>
@@ -33,7 +33,7 @@ export default function VoxelSiteLabPage() {
               <p>DY-LAB-002</p>
             </div>
 
-            <div className="mt-8 md:mt-10">
+            <div className="mt-6 md:mt-8">
               <p className="font-display text-[11px] uppercase tracking-[0.2em] text-accent">
                 Procedural assembly study
               </p>

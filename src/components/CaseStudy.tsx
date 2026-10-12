@@ -1,3 +1,4 @@
+import { TechStack } from "@/components/TechStack";
 import type { WorkItem } from "@/content/site";
 
 type CaseStudyProps = {
@@ -7,7 +8,7 @@ type CaseStudyProps = {
 
 export function CaseStudy({ work, featured = false }: CaseStudyProps) {
   return (
-    <article className="group relative grid items-start gap-10 border-t border-line py-16 md:grid-cols-12 md:py-20">
+    <article className="group relative grid items-start gap-8 border-t border-line py-8 md:grid-cols-12 md:py-10">
       <span
         aria-hidden="true"
         className="absolute top-0 left-0 h-full w-0.5 origin-top scale-y-0 bg-accent transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-y-100"
@@ -22,9 +23,7 @@ export function CaseStudy({ work, featured = false }: CaseStudyProps) {
           <p className="font-display text-2xl uppercase leading-snug tracking-tight md:text-3xl">
             {work.result}
           </p>
-          <p className="font-display text-[10px] uppercase tracking-[0.14em] text-muted">
-            {work.stack.join(" · ")}
-          </p>
+          <TechStack items={work.stack} dense />
         </div>
       </div>
       <div className={featured ? "md:col-span-5" : "md:col-span-6 md:col-start-7"}>
@@ -40,9 +39,7 @@ export function CaseStudy({ work, featured = false }: CaseStudyProps) {
           ))}
         </ul>
         <p className="mt-4 text-sm leading-relaxed">{work.result}</p>
-        <p className="mt-6 font-display text-[10px] uppercase tracking-[0.14em] text-muted">
-          {work.stack.join(" · ")}
-        </p>
+        <TechStack items={work.stack} className="mt-6" dense />
       </div>
     </article>
   );

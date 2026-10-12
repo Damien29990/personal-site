@@ -7,7 +7,7 @@ export function SelectedWork() {
   const [featured, ...rest] = site.work;
 
   return (
-    <section id="work" aria-labelledby="work-heading" className="scroll-mt-24 px-6 pt-20 md:px-8 md:pt-28">
+    <section id="work" aria-labelledby="work-heading" className="scroll-mt-20 px-6 pt-10 md:px-8 md:pt-12">
       <div className="mx-auto max-w-6xl">
         <SectionHeading id="work-heading" index="01">
           Selected works

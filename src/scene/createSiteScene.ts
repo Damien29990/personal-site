@@ -24,6 +24,16 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { withBasePath } from "@/lib/paths";
 import { buildHkDiorama } from "@/scene/hkModel";
 import { revealSpecs, type RevealSpec } from "@/scene/hkTimeline";
+import {
+  LOADERS,
+  TRAFFIC_FROM,
+  TRUCKS,
+  WALKERS,
+  WALKERS_FROM,
+  loaderPose,
+  truckPose,
+  walkerPose,
+} from "@/scene/hkTraffic";
 import { palette } from "@/scene/palette";
 import {
   BUILD_SECONDS,
@@ -135,10 +145,11 @@ export async function createSiteScene(container: HTMLElement): Promise<SiteScene
   scene.add(diorama);
   diorama.traverse((object) => {
     if (!(object instanceof Mesh) || Array.isArray(object.material)) return;
-    if (object.name === "glass" || object.name === "sheet" || object.name === "diagonal") {
+    const base = object.name.replace(/_\d+$/, "");
+    if (base === "glass" || base === "sheet" || base === "diagonal") {
       object.material.transparent = true;
-      object.material.opacity = object.name === "glass" ? 0.72 : 0.45;
-      object.material.depthWrite = object.name === "glass";
+      object.material.opacity = base === "glass" ? 0.72 : 0.45;
+      object.material.depthWrite = base === "glass";
     }
     if (object.name.startsWith("Sensor_")) {
       object.material = new MeshLambertMaterial({
@@ -163,6 +174,21 @@ export async function createSiteScene(container: HTMLElement): Promise<SiteScene
     .map((index) => diorama.getObjectByName(`Sensor_${String(index).padStart(2, "0")}`))
     .filter((object): object is Object3D => Boolean(object));
   const gateway = diorama.getObjectByName("Gateway");
+
+  const named = (name: string) => diorama.getObjectByName(name) ?? null;
+  const walkers = WALKERS.map((walker) => ({
+    body: named(walker.id),
+    legL: named(`${walker.id}_LegL`),
+    legR: named(`${walker.id}_LegR`),
+  }));
+  const trucks = TRUCKS.map((truck) => ({ body: named(truck.id), drum: named(`${truck.id}_Drum`) }));
+  const loaders = LOADERS.map((loader) => ({
+    side: loader.side,
+    body: named(loader.id),
+    arm: named(`${loader.id}_Arm`),
+    load: named(`${loader.id}_Load`),
+  }));
+  const stockpiles = [named("Stockpile_W"), named("Stockpile_E")];
 
   const hopMaterial = new MeshLambertMaterial({
     color: palette.hop,
@@ -275,6 +301,41 @@ export async function createSiteScene(container: HTMLElement): Promise<SiteScene
       if (!live) return;
       const u = (((t * (4 + index)) / LOOP_SECONDS + index * 0.2) % 1 + 1) % 1;
       hop.curve.getPoint(u, hop.mesh.position);
+    });
+
+    const walking = reveal >= WALKERS_FROM;
+    walkers.forEach((walker, index) => {
+      if (!walker.body) return;
+      walker.body.visible = walking;
+      if (!walking) return;
+      const pose = walkerPose(index, t);
+      const swing = Math.sin(pose.stride * 9);
+      walker.body.position.set(pose.x, Math.abs(swing) * 0.015, pose.z);
+      walker.body.rotation.y = pose.heading;
+      if (walker.legL) walker.legL.rotation.x = swing * 0.55;
+      if (walker.legR) walker.legR.rotation.x = -swing * 0.55;
+    });
+
+    const hauling = reveal >= TRAFFIC_FROM;
+    for (const pile of stockpiles) if (pile) pile.visible = hauling;
+    trucks.forEach((truck, index) => {
+      if (!truck.body) return;
+      const pose = truckPose(index, t);
+      truck.body.visible = hauling && pose.visible;
+      if (!truck.body.visible) return;
+      truck.body.position.set(pose.x, pose.y, pose.z);
+      truck.body.rotation.y = pose.heading;
+      if (truck.drum) truck.drum.rotation.z = t * 2.4;
+    });
+    loaders.forEach((loader) => {
+      if (!loader.body) return;
+      loader.body.visible = hauling;
+      if (!hauling) return;
+      const pose = loaderPose(loader.side, t);
+      loader.body.position.set(pose.x, 0, pose.z);
+      loader.body.rotation.y = pose.heading;
+      if (loader.arm) loader.arm.rotation.x = pose.arm;
+      if (loader.load) loader.load.visible = pose.loaded;
     });
   };
 

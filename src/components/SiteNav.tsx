@@ -9,8 +9,9 @@ export function SiteNav() {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-bg">
       <div className="h-1 bg-accent" aria-hidden="true" />
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3 md:px-8">
-        <a href="#main" className="font-display text-sm uppercase tracking-[0.16em] text-fg">
+      <div className="h-1 bg-yellow" aria-hidden="true" />
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-2 md:px-8">
+        <a href="#main" className="font-display text-sm uppercase tracking-[0.16em] text-header">
           {site.name}
         </a>
         <p className="hidden items-center gap-2 font-display text-[11px] uppercase tracking-[0.18em] text-accent md:flex">

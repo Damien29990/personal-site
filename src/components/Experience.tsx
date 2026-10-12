@@ -6,17 +6,17 @@ export function Experience() {
     <section
       id="experience"
       aria-labelledby="experience-heading"
-      className="scroll-mt-24 px-6 py-20 md:px-8 md:py-28"
+      className="scroll-mt-20 px-6 py-10 md:px-8 md:py-12"
     >
       <div className="mx-auto max-w-6xl">
         <SectionHeading id="experience-heading" index="03">
           Experience & deployments
         </SectionHeading>
-        <ul className="mt-10">
+        <ul className="mt-6">
           {site.experience.map((role) => (
             <li
               key={`${role.company}-${role.title}`}
-              className="group relative grid gap-2 border-t border-line py-8 md:grid-cols-12"
+              className="group relative grid gap-2 border-t border-line py-5 md:grid-cols-12"
             >
               <span
                 aria-hidden="true"
@@ -26,7 +26,7 @@ export function Experience() {
                 {role.dates}
               </p>
               <div className="md:col-span-9">
-                <p className="font-display text-xl uppercase tracking-tight">
+                <p className="font-display text-xl uppercase tracking-tight text-header">
                   {role.title} · {role.company}
                 </p>
                 <ul className="mt-3 space-y-2 text-muted">
@@ -38,7 +38,7 @@ export function Experience() {
             </li>
           ))}
         </ul>
-        <p className="border-t border-line py-8 text-sm leading-relaxed text-muted">
+        <p className="border-t border-line py-5 text-sm leading-relaxed text-muted">
           {site.education}
         </p>
       </div>

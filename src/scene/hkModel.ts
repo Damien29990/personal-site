@@ -6,6 +6,15 @@ import {
   type Material,
 } from "three";
 import { STOREY_HEIGHT, TOWERS, storeyName } from "./hkTimeline.ts";
+import {
+  LOADERS,
+  STOCKPILE_X,
+  STOCKPILE_Z,
+  TRUCKS,
+  WALKERS,
+  type Helmet,
+  type TruckKind,
+} from "./hkTraffic.ts";
 
 const H = STOREY_HEIGHT;
 
@@ -30,6 +39,11 @@ const color = {
   sensor: "#FF5500",
   cabin: "#F7F5F0",
   roof: "#FF5500",
+  skin: "#D9A77E",
+  tyre: "#151A22",
+  loader: "#E8A317",
+  spoil: "#B49F7C",
+  aggregate: "#9BA0A3",
 } as const;
 
 function materials(): Record<string, MeshLambertMaterial> {
@@ -227,29 +241,139 @@ function addAlimak(root: Group, mats: ReturnType<typeof materials>): void {
   root.add(hoist);
 }
 
+/** Feet at y=0, facing +z. Legs hang from hip pivots named `${name}_LegL/_LegR`. */
+function addPerson(
+  parent: Group,
+  name: string,
+  helmet: Helmet,
+  mats: ReturnType<typeof materials>,
+): Group {
+  const person = new Group();
+  person.name = name;
+  for (const [side, x] of [["L", -0.055], ["R", 0.055]] as const) {
+    const hip = new Group();
+    hip.name = `${name}_Leg${side}`;
+    hip.position.set(x, 0.18, 0);
+    addBox(hip, "leg", [0.08, 0.18, 0.09], [0, -0.09, 0], mats.column);
+    person.add(hip);
+  }
+  addBox(person, "body", [0.22, 0.2, 0.13], [0, 0.28, 0], mats.column);
+  addBox(person, "vest", [0.24, 0.15, 0.15], [0, 0.29, 0], mats.vest);
+  addBox(person, "head", [0.13, 0.13, 0.13], [0, 0.445, 0], mats.skin);
+  addBox(person, "helmet", [0.17, 0.07, 0.17], [0, 0.53, 0], helmet === "yellow" ? mats.helmetY : mats.helmetW);
+  if (helmet === "white") {
+    addBox(person, "clipboard", [0.1, 0.13, 0.02], [0.09, 0.28, 0.09], mats.frame);
+  }
+  parent.add(person);
+  return person;
+}
+
 function addWorkers(root: Group, mats: ReturnType<typeof materials>): void {
   const workers = new Group();
   workers.name = "Workers";
-  const spots: Array<[number, number, number, boolean]> = [
-    [-5.2, 0.7 + 2 * H, -1.2, true],
-    [-4.6, 0.7 + 5 * H, -1.7, false],
-    [0.4, 0.7 + 4 * H, 2.2, true],
-    [-0.6, 0.7 + 7 * H, 1.2, false],
-    [5.2, 0.7 + 3 * H, -1.2, true],
-    [5.8, 0.7 + 6 * H, -1.8, false],
-    [-6.8, 0.35, -4.2, true],
-    [6.6, 0.35, 3.4, false],
+  const deck = (level: number) => 0.44 + level * H;
+  const spots: Array<[number, number, number, Helmet]> = [
+    [-5.2, deck(2), -1.2, "yellow"],
+    [-4.6, deck(5), -1.7, "yellow"],
+    [0.4, deck(4), 2.2, "yellow"],
+    [-0.6, deck(7), 1.2, "white"],
+    [5.2, deck(3), -1.2, "yellow"],
+    [5.8, deck(6), -1.8, "yellow"],
+    [-6.8, 0, -4.2, "yellow"],
+    [6.6, 0, 3.4, "white"],
   ];
-  spots.forEach(([x, y, z, yellow], index) => {
-    const person = new Group();
-    person.name = `Worker_${String(index).padStart(2, "0")}`;
+  spots.forEach(([x, y, z, helmet], index) => {
+    const person = addPerson(workers, `Worker_${String(index).padStart(2, "0")}`, helmet, mats);
     person.position.set(x, y, z);
-    addBox(person, "body", [0.22, 0.28, 0.14], [0, 0.16, 0], mats.column);
-    addBox(person, "vest", [0.24, 0.16, 0.16], [0, 0.22, 0], mats.vest);
-    addBox(person, "helmet", [0.18, 0.1, 0.18], [0, 0.38, 0], yellow ? mats.helmetY : mats.helmetW);
-    workers.add(person);
+    person.rotation.y = index * 1.3;
   });
   root.add(workers);
+}
+
+function addWalkers(root: Group, mats: ReturnType<typeof materials>): void {
+  const walkers = new Group();
+  walkers.name = "Walkers";
+  for (const walker of WALKERS) addPerson(walkers, walker.id, walker.helmet, mats);
+  root.add(walkers);
+}
+
+function addWheels(parent: Group, zs: readonly number[], size: number, mats: ReturnType<typeof materials>): void {
+  for (const z of zs) {
+    for (const x of [-0.32, 0.32] as const) {
+      addBox(parent, "wheel", [0.16, size, size], [x, size / 2, z], mats.tyre);
+    }
+  }
+}
+
+function addTruck(parent: Group, id: string, kind: TruckKind, mats: ReturnType<typeof materials>): void {
+  const truck = new Group();
+  truck.name = id;
+  addWheels(truck, [0.58, -0.22, -0.56], 0.26, mats);
+  addBox(truck, "chassis", [0.62, 0.12, 1.75], [0, 0.26, 0], mats.steel);
+  addBox(truck, "cab", [0.66, 0.5, 0.46], [0, 0.57, 0.62], mats.craneWhite);
+  addBox(truck, "windscreen", [0.56, 0.2, 0.02], [0, 0.66, 0.86], mats.glass);
+  addBox(truck, "cabStripe", [0.67, 0.06, 0.47], [0, 0.42, 0.62], mats.crane);
+
+  if (kind === "mixer") {
+    const drum = new Group();
+    drum.name = `${id}_Drum`;
+    drum.position.set(0, 0.66, -0.3);
+    drum.rotation.x = -0.16;
+    addBox(drum, "drum", [0.52, 0.52, 1.0], [0, 0, 0], mats.craneWhite);
+    addBox(drum, "drumStripe", [0.54, 0.1, 1.02], [0, 0, 0], mats.crane);
+    truck.add(drum);
+    addBox(truck, "chute", [0.1, 0.06, 0.34], [0, 0.42, -0.98], mats.steel);
+  } else if (kind === "tipper") {
+    addBox(truck, "bed", [0.66, 0.34, 1.12], [0, 0.49, -0.3], mats.crane);
+    addBox(truck, "spoil", [0.56, 0.12, 1.0], [0, 0.7, -0.3], mats.spoil);
+  } else {
+    addBox(truck, "deck", [0.66, 0.08, 1.12], [0, 0.36, -0.3], mats.steel);
+    addBox(truck, "panelA", [0.58, 0.1, 1.02], [0, 0.45, -0.3], mats.frame);
+    addBox(truck, "panelB", [0.58, 0.1, 1.02], [0, 0.56, -0.3], mats.mic);
+    addBox(truck, "strap", [0.6, 0.24, 0.04], [0, 0.5, -0.3], mats.craneRed);
+  }
+  parent.add(truck);
+}
+
+function addLoader(parent: Group, id: string, mats: ReturnType<typeof materials>): void {
+  const loader = new Group();
+  loader.name = id;
+  addWheels(loader, [0.32, -0.36], 0.34, mats);
+  addBox(loader, "engine", [0.6, 0.34, 0.66], [0, 0.42, -0.3], mats.loader);
+  addBox(loader, "cab", [0.48, 0.4, 0.44], [0, 0.78, 0.02], mats.glass);
+  addBox(loader, "cabRoof", [0.54, 0.06, 0.5], [0, 1.01, 0.02], mats.loader);
+  addBox(loader, "frontFrame", [0.5, 0.2, 0.36], [0, 0.4, 0.3], mats.loader);
+
+  const arm = new Group();
+  arm.name = `${id}_Arm`;
+  arm.position.set(0, 0.5, 0.36);
+  for (const x of [-0.2, 0.2] as const) {
+    addBox(arm, "boom", [0.06, 0.07, 0.6], [x, 0, 0.3], mats.loader);
+  }
+  addBox(arm, "bucket", [0.72, 0.22, 0.24], [0, -0.2, 0.64], mats.steel);
+  addBox(arm, `${id}_Load`, [0.6, 0.1, 0.18], [0, -0.06, 0.64], mats.spoil);
+  loader.add(arm);
+  parent.add(loader);
+}
+
+function addStockpile(parent: Group, name: string, x: number, material: Material): void {
+  const pile = new Group();
+  pile.name = name;
+  pile.position.set(x, 0, STOCKPILE_Z);
+  addBox(pile, "tier0", [1.4, 0.3, 1.4], [0, 0.15, 0], material);
+  addBox(pile, "tier1", [1.0, 0.25, 1.0], [0, 0.42, 0], material);
+  addBox(pile, "tier2", [0.6, 0.2, 0.6], [0, 0.64, 0], material);
+  parent.add(pile);
+}
+
+function addTraffic(root: Group, mats: ReturnType<typeof materials>): void {
+  const traffic = new Group();
+  traffic.name = "Traffic";
+  for (const truck of TRUCKS) addTruck(traffic, truck.id, truck.kind, mats);
+  for (const loader of LOADERS) addLoader(traffic, loader.id, mats);
+  addStockpile(traffic, "Stockpile_W", -STOCKPILE_X, mats.spoil);
+  addStockpile(traffic, "Stockpile_E", STOCKPILE_X, mats.aggregate);
+  root.add(traffic);
 }
 
 function addIot(root: Group, mats: ReturnType<typeof materials>): void {
@@ -267,7 +391,7 @@ function addIot(root: Group, mats: ReturnType<typeof materials>): void {
 
   const cabin = new Group();
   cabin.name = "Gateway";
-  cabin.position.set(-7.6, 0, 4.2);
+  cabin.position.set(-6.4, 0, 6.7);
   addBox(cabin, "body", [1.8, 1.15, 1.15], [0, 0.65, 0], mats.cabin);
   addBox(cabin, "roof", [1.95, 0.1, 1.28], [0, 1.28, 0], mats.roof);
   addBox(cabin, "antenna", [0.08, 0.45, 0.08], [0.4, 1.6, 0], mats.sensor);
@@ -315,6 +439,8 @@ export function buildHkDiorama(): Group {
   addEnvelope(root, mats);
   addAlimak(root, mats);
   addWorkers(root, mats);
+  addWalkers(root, mats);
+  addTraffic(root, mats);
   addIot(root, mats);
   return root;
 }
