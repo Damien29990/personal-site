@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type DragEvent as ReactDragEvent,
@@ -33,6 +34,74 @@ type DropTarget = {
   index: number;
 };
 
+type RectSnap = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
+
+/** Landing on the platform, relative to `.book-platform-row`. */
+type FloorSpot = {
+  left: number;
+  bottom: number;
+  /** Final rest angle in degrees. */
+  angle: number;
+  /** Flat = knocked over on its side after a collision. */
+  pose: "upright" | "flat";
+};
+
+function randomPose(): Pick<FloorSpot, "angle" | "pose"> {
+  // Chaotic drops: many books tip over; the rest lean at odd upright angles.
+  if (Math.random() < 0.55) {
+    const side = Math.random() < 0.5 ? -1 : 1;
+    return { pose: "flat", angle: side * (72 + Math.random() * 36) };
+  }
+  const side = Math.random() < 0.5 ? -1 : 1;
+  return { pose: "upright", angle: side * (6 + Math.random() * 28) };
+}
+
+function planFloorSpots(
+  names: readonly string[],
+  origins: Record<string, RectSnap>,
+  platform: DOMRect,
+  existing: Record<string, FloorSpot>,
+): Record<string, FloorSpot> {
+  const next = { ...existing };
+
+  for (const name of names) {
+    const origin = origins[name];
+    if (!origin) continue;
+    const width = Math.max(origin.width, 14);
+    const scatter = (Math.random() * 2 - 1) * 28;
+    let left = origin.left - platform.left + scatter;
+    left = Math.max(4, Math.min(left, Math.max(4, platform.width - width - 4)));
+    let bottom = 6 + Math.random() * 10;
+    const pose = randomPose();
+
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const overlaps = Object.entries(next).some(([other, spot]) => {
+        if (other === name) return false;
+        const otherWidth = origins[other]?.width ?? 18;
+        const pad = spot.pose === "flat" || pose.pose === "flat" ? 0.85 : 0.55;
+        return Math.abs(spot.left - left) < (width + otherWidth) * pad && Math.abs(spot.bottom - bottom) < 22;
+      });
+      if (!overlaps) break;
+      // Collision response: kick sideways, then pile.
+      if (attempt < 6) {
+        left += (Math.random() < 0.5 ? -1 : 1) * (width * (0.4 + Math.random() * 0.5));
+        left = Math.max(4, Math.min(left, platform.width - width - 4));
+      } else {
+        bottom += 12 + Math.random() * 10;
+      }
+    }
+
+    next[name] = { left, bottom, ...pose };
+  }
+
+  return next;
+}
+
 const RESET_SPECKS = [
   { dx: "-36px", dy: "-42px" },
   { dx: "40px", dy: "-28px" },
@@ -46,6 +115,8 @@ const RESET_SPECKS = [
   { dx: "-30px", dy: "-22px" },
 ] as const;
 
+const FALL_MS = 780;
+
 function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
@@ -56,11 +127,12 @@ function bookTone(name: string): 0 | 1 | 2 | 3 | 4 | 5 {
   return (hash % 6) as 0 | 1 | 2 | 3 | 4 | 5;
 }
 
+/** Slim spines so a packed bay stays one shelf row. */
 function bookMetrics(name: string): { width: string; height: string } {
   let hash = 0;
   for (let i = 0; i < name.length; i += 1) hash += name.charCodeAt(i) * (i + 3);
-  const width = 2.2 + (hash % 5) * 0.16 + Math.min(name.length, 16) * 0.02;
-  const height = 5.7 + (hash % 4) * 0.38;
+  const width = 1.05 + (hash % 4) * 0.08 + Math.min(name.length, 10) * 0.012;
+  const height = 5.1 + (hash % 3) * 0.28;
   return { width: `${width}rem`, height: `${height}rem` };
 }
 
@@ -76,14 +148,6 @@ function shelfPairs(shelves: SkillColumn[]): Array<[SkillColumn | undefined, Ski
     pairs.push([shelves[index], shelves[index + 1]]);
   }
   return pairs;
-}
-
-function shelfRowOf(state: SkillBoardState, name: string): number {
-  const live = state.shelves.findIndex((column) => column.items.includes(name));
-  if (live >= 0) return Math.floor(live / 2);
-  const home = homeGroupOf(name);
-  const homeIndex = state.shelves.findIndex((column) => column.group === home);
-  return Math.max(0, Math.floor(homeIndex / 2));
 }
 
 function ResetTagsButton({
@@ -172,10 +236,11 @@ function SkillBook({
   index,
   fallen,
   falling,
-  fallRow,
   returning,
   dragging,
   dropTarget,
+  floorSpot,
+  registerEl,
   onDragStart,
   onDragOver,
   onDrop,
@@ -188,10 +253,11 @@ function SkillBook({
   index: number;
   fallen: boolean;
   falling: boolean;
-  fallRow: number;
   returning: boolean;
   dragging: boolean;
   dropTarget: boolean;
+  floorSpot?: FloorSpot;
+  registerEl: (name: string, node: HTMLButtonElement | null) => void;
   onDragStart: (name: string, group: string) => void;
   onDragOver: (event: ReactDragEvent<HTMLButtonElement>, group: string, index: number) => void;
   onDrop: (group: string, index: number) => void;
@@ -202,6 +268,7 @@ function SkillBook({
   const home = homeGroupOf(name);
   const tone = bookTone(name);
   const metrics = bookMetrics(name);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   const onKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
     if (
@@ -216,10 +283,22 @@ function SkillBook({
   };
 
   return (
-    <li>
+    <li
+      className={fallen ? "skill-book-slot is-floor" : "skill-book-slot"}
+      style={
+        fallen && floorSpot
+          ? { left: floorSpot.left, bottom: floorSpot.bottom }
+          : undefined
+      }
+    >
       <button
         type="button"
+        ref={(node) => {
+          buttonRef.current = node;
+          registerEl(name, node);
+        }}
         draggable
+        data-book={name}
         onKeyDown={onKeyDown}
         onDragStart={(event) => {
           event.dataTransfer.effectAllowed = "move";
@@ -238,27 +317,27 @@ function SkillBook({
         onDragEnd={onDragEnd}
         aria-grabbed={dragging}
         aria-label={`${name}. ${fallen ? "On the floor" : `On the ${home ?? group} shelf`}. Drag onto a shelf, or shake the case to drop books.`}
-        className={`skill-book skill-book-tone-${tone} ${fallen ? "is-fallen" : ""} ${
-          falling ? "is-falling" : ""
-        } ${returning ? "is-returning" : ""} ${dragging ? "is-dragging" : ""} ${
-          dropTarget ? "is-drop-target" : ""
-        }`}
+        className={`skill-book skill-book-tone-${tone} ${fallen ? "is-fallen" : "is-shelf"} ${
+          fallen && floorSpot?.pose === "flat" && !dragging ? "is-flat" : ""
+        } ${falling ? "is-falling" : ""} ${returning ? "is-returning" : ""} ${
+          dragging ? "is-dragging" : ""
+        } ${dropTarget ? "is-drop-target" : ""}`}
         style={{
-          width: metrics.width,
           height: metrics.height,
           ...(fallen
             ? {
-                ["--book-tilt" as string]: `${tiltFor(name)}deg`,
-                ["--fall-delay" as string]: `${index * 70}ms`,
-                ["--fall-from" as string]: `${-6.5 - fallRow * 4.2}rem`,
-                ["--fall-drift" as string]: `${tiltFor(name) * 2.4}px`,
-                ["--fall-ms" as string]: `${0.62 + fallRow * 0.14}s`,
+                width: metrics.width,
+                ["--book-tilt" as string]: `${
+                  dragging ? 0 : (floorSpot?.angle ?? tiltFor(name))
+                }deg`,
               }
-            : {}),
+            : {
+                ["--book-tilt" as string]: "0deg",
+              }),
         }}
       >
         <span className="skill-book-mark">
-          <TagChipIcon name={name} size={16} />
+          <TagChipIcon name={name} size={fallen ? 14 : 12} />
         </span>
         <span className="skill-book-title">{name}</span>
       </button>
@@ -272,6 +351,8 @@ function LibraryBay({
   over,
   dragName,
   returning,
+  fallingNames,
+  registerEl,
   onDragOverGroup,
   onDragLeaveGroup,
   onDropBay,
@@ -287,6 +368,8 @@ function LibraryBay({
   over: DropTarget | null;
   dragName: string | null;
   returning: boolean;
+  fallingNames: ReadonlySet<string>;
+  registerEl: (name: string, node: HTMLButtonElement | null) => void;
   onDragOverGroup: (event: ReactDragEvent<HTMLElement>, group: string, index: number) => void;
   onDragLeaveGroup: (group: string) => void;
   onDropBay: (column: SkillColumn) => void;
@@ -307,6 +390,7 @@ function LibraryBay({
   }
 
   const groupActive = over?.group === column.group;
+  const count = Math.max(column.items.length, 1);
 
   return (
     <section
@@ -321,6 +405,7 @@ function LibraryBay({
       }}
       className={`library-bay ${groupActive ? "is-active" : ""}`}
       aria-label={column.group}
+      style={{ ["--bay-count" as string]: String(count) }}
     >
       <ul className="library-row" aria-describedby={hintId}>
         {column.items.map((name, index) => (
@@ -330,11 +415,11 @@ function LibraryBay({
             group={column.group}
             index={index}
             fallen={false}
-            falling={false}
-            fallRow={0}
+            falling={fallingNames.has(name)}
             returning={returning}
             dragging={dragName === name}
             dropTarget={over?.group === column.group && over.index === index && dragName !== name}
+            registerEl={registerEl}
             onDragStart={onDragStart}
             onDragOver={onDragOverBook}
             onDrop={onDropBook}
@@ -352,6 +437,10 @@ function LibraryBay({
 export function SkillBoard() {
   const hintId = useId();
   const rigRef = useRef<HTMLDivElement>(null);
+  const platformRowRef = useRef<HTMLUListElement>(null);
+  const bookEls = useRef(new Map<string, HTMLButtonElement>());
+  const pendingOrigins = useRef<Record<string, RectSnap>>({});
+  const floorSpotsRef = useRef<Record<string, FloorSpot>>({});
   const shakeRef = useRef({
     pointerId: -1,
     lastX: 0,
@@ -365,31 +454,151 @@ export function SkillBoard() {
   const [board, setBoard] = useState<SkillBoardState>(defaultSkillBoardState);
   const [drag, setDrag] = useState<DragSource | null>(null);
   const [over, setOver] = useState<DropTarget | null>(null);
-  const [falling, setFalling] = useState<Record<string, number>>({});
+  const [falling, setFalling] = useState<ReadonlySet<string>>(() => new Set());
+  const [floorSpots, setFloorSpots] = useState<Record<string, FloorSpot>>({});
   const dropCommitted = useRef(false);
   const [rattling, setRattling] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [returning, setReturning] = useState(false);
   const messy = !isCanonicalSkillBoard(board);
 
+  useEffect(() => {
+    floorSpotsRef.current = floorSpots;
+  }, [floorSpots]);
+
+  const registerEl = useCallback((name: string, node: HTMLButtonElement | null) => {
+    if (node) bookEls.current.set(name, node);
+    else bookEls.current.delete(name);
+  }, []);
+
+  const captureOrigins = useCallback((names: readonly string[]) => {
+    const snaps: Record<string, RectSnap> = {};
+    for (const name of names) {
+      const el = bookEls.current.get(name);
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      snaps[name] = {
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+      };
+    }
+    pendingOrigins.current = { ...pendingOrigins.current, ...snaps };
+    return snaps;
+  }, []);
+
+  const animatedFalls = useRef(new Set<string>());
+
   const restoreBoard = useCallback(() => {
-    setFalling({});
+    setFalling(new Set());
+    pendingOrigins.current = {};
+    floorSpotsRef.current = {};
+    animatedFalls.current.clear();
+    setFloorSpots({});
     setReturning(true);
     setBoard(defaultSkillBoardState());
     window.setTimeout(() => setReturning(false), 520);
   }, []);
 
-  const markFalling = useCallback((state: SkillBoardState, names: readonly string[]) => {
-    const meta: Record<string, number> = {};
-    for (const name of names) meta[name] = shelfRowOf(state, name);
-    setFalling((current) => ({ ...current, ...meta }));
-    window.setTimeout(() => {
+  const markFalling = useCallback(
+    (names: readonly string[]) => {
+      if (names.length === 0) return;
+      const snaps = captureOrigins(names);
+      const platform = platformRowRef.current?.getBoundingClientRect();
+      if (platform) {
+        const planned = planFloorSpots(names, snaps, platform, floorSpotsRef.current);
+        floorSpotsRef.current = planned;
+        setFloorSpots(planned);
+      }
       setFalling((current) => {
-        const next = { ...current };
-        for (const name of names) delete next[name];
+        const next = new Set(current);
+        for (const name of names) next.add(name);
         return next;
       });
-    }, 1200);
+      window.setTimeout(() => {
+        setFalling((current) => {
+          const next = new Set(current);
+          for (const name of names) {
+            next.delete(name);
+            animatedFalls.current.delete(name);
+          }
+          return next;
+        });
+        for (const name of names) delete pendingOrigins.current[name];
+      }, FALL_MS + 160);
+    },
+    [captureOrigins],
+  );
+
+  // FLIP once per drop. Re-running this effect (new books, Strict Mode) must not replay books already in flight.
+  useLayoutEffect(() => {
+    if (falling.size === 0 || prefersReducedMotion()) return;
+    const cleanups: Array<() => void> = [];
+
+    for (const name of falling) {
+      if (animatedFalls.current.has(name)) continue;
+      const from = pendingOrigins.current[name];
+      const el = bookEls.current.get(name);
+      const spot = floorSpotsRef.current[name];
+      if (!from || !el) continue;
+
+      animatedFalls.current.add(name);
+      const to = el.getBoundingClientRect();
+      const dx = from.left - to.left;
+      const dy = from.top - to.top;
+      const angle = spot?.angle ?? tiltFor(name);
+      const spinIn = angle > 0 ? -22 : 22;
+      let started = false;
+
+      el.style.transition = "none";
+      el.style.transform = `translate(${dx}px, ${dy}px) rotate(${spinIn}deg)`;
+      el.style.zIndex = "40";
+      el.style.willChange = "transform";
+
+      const start = () => {
+        if (started) return;
+        started = true;
+        el.style.transition = `transform ${FALL_MS}ms cubic-bezier(0.2, 0.78, 0.28, 1)`;
+        el.style.transform = `rotate(${angle}deg)`;
+      };
+
+      const raf = window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(start);
+      });
+
+      const onEnd = (event: TransitionEvent) => {
+        if (event.target !== el || event.propertyName !== "transform") return;
+        el.style.transition = "";
+        el.style.willChange = "";
+        el.style.zIndex = "";
+        el.style.transform = "";
+      };
+      el.addEventListener("transitionend", onEnd);
+
+      cleanups.push(() => {
+        window.cancelAnimationFrame(raf);
+        el.removeEventListener("transitionend", onEnd);
+        if (!started) animatedFalls.current.delete(name);
+      });
+    }
+
+    return () => {
+      for (const cleanup of cleanups) cleanup();
+    };
+  }, [falling, board.floor]);
+
+  const straightenFloorBook = useCallback((name: string) => {
+    setFloorSpots((current) => {
+      const spot = current[name];
+      if (!spot || (spot.pose === "upright" && spot.angle === 0)) return current;
+      const next = {
+        ...current,
+        [name]: { ...spot, pose: "upright" as const, angle: 0 },
+      };
+      floorSpotsRef.current = next;
+      return next;
+    });
   }, []);
 
   const boardRef = useRef(board);
@@ -397,14 +606,13 @@ export function SkillBoard() {
     boardRef.current = board;
   }, [board]);
 
-  // Picks outside the state updater: Strict Mode replays updaters, and a random pick would differ per replay.
   const dropBooks = useCallback(
     (count: number) => {
       const current = boardRef.current;
       const names = pickShakeDrops(current, count);
       if (names.length === 0) return;
+      markFalling(names);
       boardRef.current = dropToFloor(current, names);
-      markFalling(current, names);
       setBoard((latest) => dropToFloor(latest, names));
     },
     [markFalling],
@@ -425,11 +633,11 @@ export function SkillBoard() {
       motion.samples = [];
       if (rigRef.current) rigRef.current.style.transform = "";
       setRattling(true);
-      dropBooks(count);
+      window.setTimeout(() => dropBooks(count), 260);
       window.setTimeout(() => {
         motion.cooling = false;
         setRattling(false);
-      }, 420);
+      }, 720);
     },
     [dropBooks],
   );
@@ -500,9 +708,31 @@ export function SkillBoard() {
 
   const place = useCallback(
     (name: string, fromGroup: string, toGroup: string, toIndex: number) => {
-      setBoard((current) => placeSkill(current, name, fromGroup, toGroup, toIndex));
+      if (fromGroup === FLOOR_GROUP && toGroup !== FLOOR_GROUP) {
+        setFloorSpots((current) => {
+          if (!(name in current)) return current;
+          const next = { ...current };
+          delete next[name];
+          floorSpotsRef.current = next;
+          return next;
+        });
+      }
+      setBoard((current) => {
+        const next = placeSkill(current, name, fromGroup, toGroup, toIndex);
+        boardRef.current = next;
+        return next;
+      });
     },
     [],
+  );
+
+  const dropNamed = useCallback(
+    (name: string, fromGroup: string) => {
+      if (fromGroup === FLOOR_GROUP) return;
+      markFalling([name]);
+      place(name, fromGroup, FLOOR_GROUP, boardRef.current.floor.length);
+    },
+    [markFalling, place],
   );
 
   const onDragOverBook = useCallback(
@@ -529,25 +759,24 @@ export function SkillBoard() {
       dropCommitted.current = true;
       if (drag) {
         if (group === FLOOR_GROUP && drag.group !== FLOOR_GROUP) {
-          markFalling(board, [drag.name]);
+          markFalling([drag.name]);
         }
         place(drag.name, drag.group, group, index);
       }
       setDrag(null);
       setOver(null);
     },
-    [board, drag, markFalling, place],
+    [drag, markFalling, place],
   );
 
   const clearDrag = useCallback(() => {
     if (!dropCommitted.current && drag && drag.group !== FLOOR_GROUP) {
-      markFalling(board, [drag.name]);
-      place(drag.name, drag.group, FLOOR_GROUP, board.floor.length);
+      dropNamed(drag.name, drag.group);
     }
     dropCommitted.current = false;
     setDrag(null);
     setOver(null);
-  }, [board, drag, markFalling, place]);
+  }, [drag, dropNamed]);
 
   const onMoveWithKeyboard = useCallback(
     (name: string, group: string, key: string) => {
@@ -587,8 +816,7 @@ export function SkillBoard() {
         return;
       }
       if (key === "ArrowDown") {
-        markFalling(board, [name]);
-        place(name, group, FLOOR_GROUP, board.floor.length);
+        dropNamed(name, group);
         return;
       }
       if (key === "ArrowUp" && columnIndex > 0) {
@@ -596,7 +824,7 @@ export function SkillBoard() {
         if (target) place(name, group, target.group, Math.min(index, target.items.length));
       }
     },
-    [board, markFalling, place],
+    [board, dropNamed, place],
   );
 
   return (
@@ -634,6 +862,8 @@ export function SkillBoard() {
                   over={over}
                   dragName={drag?.name ?? null}
                   returning={returning}
+                  fallingNames={falling}
+                  registerEl={registerEl}
                   onDragOverGroup={onDragOverGroup}
                   onDragLeaveGroup={(group) => {
                     setOver((current) => (current?.group === group ? null : current));
@@ -652,10 +882,7 @@ export function SkillBoard() {
                   onDropBook={finishDrop}
                   onDragEnd={clearDrag}
                   onMoveWithKeyboard={onMoveWithKeyboard}
-                  onNudgeOff={(name, group) => {
-                    markFalling(board, [name]);
-                    place(name, group, FLOOR_GROUP, board.floor.length);
-                  }}
+                  onNudgeOff={dropNamed}
                 />
                 <div className="library-mullion" aria-hidden="true" />
                 <LibraryBay
@@ -664,6 +891,8 @@ export function SkillBoard() {
                   over={over}
                   dragName={drag?.name ?? null}
                   returning={returning}
+                  fallingNames={falling}
+                  registerEl={registerEl}
                   onDragOverGroup={onDragOverGroup}
                   onDragLeaveGroup={(group) => {
                     setOver((current) => (current?.group === group ? null : current));
@@ -682,10 +911,7 @@ export function SkillBoard() {
                   onDropBook={finishDrop}
                   onDragEnd={clearDrag}
                   onMoveWithKeyboard={onMoveWithKeyboard}
-                  onNudgeOff={(name, group) => {
-                    markFalling(board, [name]);
-                    place(name, group, FLOOR_GROUP, board.floor.length);
-                  }}
+                  onNudgeOff={dropNamed}
                 />
               </div>
             ))}
@@ -706,29 +932,31 @@ export function SkillBoard() {
           finishDrop(FLOOR_GROUP, over?.group === FLOOR_GROUP ? over.index : board.floor.length);
         }}
       >
-        <div className="book-platform-shadow" aria-hidden="true" />
+        <div className="book-platform-sphere" aria-hidden="true" />
         <div className="book-platform-deck">
-          <p className="book-platform-caption">Shadow platform</p>
-          {board.floor.length === 0 ? (
-            <p className="book-platform-empty">Shake the shelves. Fallen books land here.</p>
-          ) : (
-            <ul className="book-platform-row" aria-label="Fallen books">
-              {board.floor.map((name, index) => (
+          <ul
+            ref={platformRowRef}
+            className="book-platform-row"
+            aria-label="Fallen books"
+          >
+            {board.floor.map((name, index) => (
                 <SkillBook
                   key={name}
                   name={name}
                   group={FLOOR_GROUP}
                   index={index}
                   fallen
-                  falling={falling[name] !== undefined}
-                  fallRow={falling[name] ?? 0}
+                  falling={falling.has(name)}
                   returning={false}
                   dragging={drag?.name === name}
                   dropTarget={
                     over?.group === FLOOR_GROUP && over.index === index && drag?.name !== name
                   }
+                  floorSpot={floorSpots[name]}
+                  registerEl={registerEl}
                   onDragStart={(tagName, tagGroup) => {
                     dropCommitted.current = false;
+                    straightenFloorBook(tagName);
                     setDrag({ name: tagName, group: tagGroup });
                   }}
                   onDragOver={onDragOverBook}
@@ -737,9 +965,8 @@ export function SkillBoard() {
                   onMoveWithKeyboard={onMoveWithKeyboard}
                   onNudgeOff={() => undefined}
                 />
-              ))}
-            </ul>
-          )}
+            ))}
+          </ul>
         </div>
       </div>
     </div>
