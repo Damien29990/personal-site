@@ -19,6 +19,7 @@ const ICONS: Record<string, string> = {
   Colab: `${SIMPLE}/googlecolab/F9AB00`,
   "Google Colab": `${SIMPLE}/googlecolab/F9AB00`,
   TypeScript: `${SIMPLE}/typescript/3178C6`,
+  "Three.js": `${SIMPLE}/threedotjs/000000`,
   React: `${SIMPLE}/react/61DAFB`,
   "React.js": `${SIMPLE}/react/61DAFB`,
   Vue: `${SIMPLE}/vuedotjs/4FC08D`,

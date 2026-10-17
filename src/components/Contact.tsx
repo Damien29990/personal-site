@@ -3,7 +3,7 @@ import { SectionHeading } from "@/components/SectionHeading";
 
 type ContactKey = (typeof site.contact.specs)[number]["key"];
 
-function ContactIcon({ name }: { name: ContactKey }) {
+export function ContactIcon({ name }: { name: ContactKey }) {
   const common = {
     viewBox: "0 0 24 24",
     "aria-hidden": true as const,

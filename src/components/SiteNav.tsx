@@ -1,10 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
+import { ContactIcon } from "@/components/Contact";
 import { site } from "@/content/site";
 
 export function SiteNav() {
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-bg">
@@ -14,11 +29,7 @@ export function SiteNav() {
         <a href="#main" className="font-display text-sm uppercase tracking-[0.16em] text-header">
           {site.name}
         </a>
-        <p className="hidden items-center gap-2 font-display text-[11px] uppercase tracking-[0.18em] text-accent md:flex">
-          <span className="inline-block h-2 w-2 bg-accent" aria-hidden="true" />
-          {site.status}
-        </p>
-        <nav className="hidden items-center gap-7 md:flex" aria-label="Primary">
+        <nav className="site-nav hidden items-center gap-7 md:flex" aria-label="Primary">
           {site.nav.map((item) => (
             <a
               key={item.href}
@@ -31,38 +42,58 @@ export function SiteNav() {
         </nav>
         <button
           type="button"
-          className="inline-flex min-h-11 items-center border border-fg px-3 font-display text-sm uppercase tracking-[0.14em] md:hidden"
+          className={`menu-toggle md:hidden ${open ? "is-open" : ""}`}
           aria-expanded={open}
           aria-controls="mobile-nav"
+          aria-label={open ? "Close menu" : "Open menu"}
           onClick={() => setOpen((value) => !value)}
         >
-          {open ? "Close" : "Menu"}
+          <span className="menu-toggle-line" />
+          <span className="menu-toggle-line" />
         </button>
       </div>
-      {open ? (
-        <nav
-          id="mobile-nav"
-          className="border-t border-line px-6 py-4 md:hidden"
-          aria-label="Mobile"
-        >
-          <p className="mb-3 flex items-center gap-2 font-display text-[11px] uppercase tracking-[0.18em] text-accent">
-            <span className="inline-block h-2 w-2 bg-accent" aria-hidden="true" />
-            {site.status}
-          </p>
-          <div className="flex flex-col">
-            {site.nav.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className="link-line flex min-h-11 w-fit items-center font-display text-sm uppercase tracking-[0.14em]"
-                onClick={() => setOpen(false)}
-              >
-                {item.label}
-              </a>
-            ))}
-          </div>
-        </nav>
-      ) : null}
+      <nav
+        id="mobile-nav"
+        className={`menu-screen md:hidden ${open ? "is-open" : ""}`}
+        aria-label="Mobile"
+        aria-hidden={!open}
+      >
+        <div className="menu-list flex flex-col gap-1">
+          {site.nav.map((item, index) => (
+            <a
+              key={item.href}
+              href={item.href}
+              tabIndex={open ? 0 : -1}
+              className="menu-fade link-line flex min-h-14 w-fit items-center font-display text-3xl uppercase tracking-[0.08em] text-header"
+              style={{ "--fade-index": index } as CSSProperties}
+              onClick={() => setOpen(false)}
+            >
+              {item.label}
+            </a>
+          ))}
+        </div>
+        <ul className="menu-icons flex flex-wrap gap-3">
+          {site.contact.specs.map((row, index) => {
+            const external = row.href.startsWith("http");
+            return (
+              <li key={row.key}>
+                <a
+                  href={row.href}
+                  tabIndex={open ? 0 : -1}
+                  aria-label={`${row.key}: ${row.value}`}
+                  title={row.value}
+                  {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
+                  className="menu-fade flex min-h-11 min-w-11 items-center justify-center border border-header bg-bg px-3 text-header transition-colors duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-accent hover:bg-accent hover:text-accent-fg"
+                  style={{ "--fade-index": site.nav.length + index } as CSSProperties}
+                  onClick={() => setOpen(false)}
+                >
+                  <ContactIcon name={row.key} />
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
     </header>
   );
 }

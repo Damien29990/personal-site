@@ -80,6 +80,115 @@ h3 {
     24px 24px;
 }
 
+.menu-toggle {
+  position: relative;
+  z-index: 50;
+  display: inline-flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.menu-toggle-line {
+  position: absolute;
+  left: 50%;
+  width: 1.35rem;
+  height: 2px;
+  margin-left: -0.675rem;
+  background: currentColor;
+  transform-origin: center;
+  transition: transform 0.28s var(--ease-quiet);
+}
+
+.menu-toggle-line:first-child {
+  transform: translateY(-5px);
+}
+
+.menu-toggle-line:last-child {
+  transform: translateY(5px);
+}
+
+.menu-toggle.is-open .menu-toggle-line:first-child {
+  transform: rotate(45deg);
+}
+
+.menu-toggle.is-open .menu-toggle-line:last-child {
+  transform: rotate(-45deg);
+}
+
+.menu-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6.75rem 1.75rem 2rem;
+  background: var(--bg);
+  visibility: hidden;
+  pointer-events: none;
+  transition: visibility 0s linear 0.62s;
+}
+
+.menu-screen.is-open {
+  visibility: visible;
+  pointer-events: auto;
+  transition: visibility 0s;
+}
+
+.menu-fade {
+  opacity: 0;
+  transform: translateY(0.65rem);
+  transition:
+    opacity 0.42s var(--ease-quiet),
+    transform 0.42s var(--ease-quiet),
+    color 0.22s var(--ease-quiet),
+    background-color 0.22s var(--ease-quiet),
+    border-color 0.22s var(--ease-quiet);
+  transition-delay: calc((4 - var(--fade-index, 0)) * 36ms);
+}
+
+.menu-screen.is-open .menu-fade {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: calc(var(--fade-index, 0) * 55ms);
+}
+
+.site-nav .link-line {
+  transition:
+    opacity 0.28s var(--ease-quiet),
+    color 0.3s var(--ease-quiet);
+}
+
+.site-nav:hover .link-line,
+.site-nav:focus-within .link-line,
+.menu-screen.is-open .menu-list:hover > .menu-fade,
+.menu-screen.is-open .menu-list:focus-within > .menu-fade,
+.menu-screen.is-open .menu-icons:hover > li > .menu-fade,
+.menu-screen.is-open .menu-icons:focus-within > li > .menu-fade {
+  opacity: 0.28;
+  transition-delay: 0s;
+}
+
+.site-nav:hover .link-line:hover,
+.site-nav:focus-within .link-line:focus-visible,
+.menu-screen.is-open .menu-list:hover > .menu-fade:hover,
+.menu-screen.is-open .menu-list:focus-within > .menu-fade:focus-visible,
+.menu-screen.is-open .menu-icons:hover > li > .menu-fade:hover,
+.menu-screen.is-open .menu-icons:focus-within > li > .menu-fade:focus-visible {
+  opacity: 1;
+}
+
+@media (min-width: 768px) {
+  .menu-toggle,
+  .menu-screen {
+    display: none;
+  }
+}
+
 .link-line {
   position: relative;
   display: inline-flex;
