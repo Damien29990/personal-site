@@ -3,6 +3,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { ContactIcon } from "@/components/Contact";
 import { site } from "@/content/site";
+import { withBasePath } from "@/lib/paths";
 
 export function SiteNav() {
   const [open, setOpen] = useState(false);
@@ -26,8 +27,14 @@ export function SiteNav() {
       <div className="h-1 bg-accent" aria-hidden="true" />
       <div className="h-1 bg-yellow" aria-hidden="true" />
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-2 md:px-8">
-        <a href="#main" className="font-display text-sm uppercase tracking-[0.16em] text-header">
-          {site.name}
+        <a href="#main" className="flex items-center" aria-label={site.name}>
+          <img
+            src={withBasePath("/brand/dy-mark.jpg")}
+            alt=""
+            width={40}
+            height={40}
+            className="h-10 w-10 shrink-0"
+          />
         </a>
         <nav className="site-nav hidden items-center gap-7 md:flex" aria-label="Primary">
           {site.nav.map((item) => (
