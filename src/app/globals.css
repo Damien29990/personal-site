@@ -80,6 +80,69 @@ h3 {
     24px 24px;
 }
 
+.project-rail {
+  overflow: hidden;
+  cursor: grab;
+}
+
+.project-rail:active {
+  cursor: grabbing;
+}
+
+.project-rail:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 6px;
+}
+
+.project-rail-track {
+  display: flex;
+  width: 100%;
+  touch-action: pan-y;
+  transition: transform 0.55s var(--ease-quiet);
+}
+
+.project-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  min-width: 0;
+}
+
+.project-move {
+  display: inline-flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--fg);
+  background: var(--bg);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.project-move:hover:not(:disabled),
+.project-move:focus-visible:not(:disabled) {
+  background: var(--color-header);
+  color: var(--color-accent-fg);
+}
+
+.project-move:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.project-play {
+  width: auto;
+  height: 2.25rem;
+  gap: 0.4rem;
+  padding-inline: 0.65rem;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .menu-toggle {
   position: relative;
   z-index: 50;

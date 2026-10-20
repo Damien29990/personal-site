@@ -20,6 +20,7 @@ const ICONS: Record<string, string> = {
   "Google Colab": `${SIMPLE}/googlecolab/F9AB00`,
   TypeScript: `${SIMPLE}/typescript/3178C6`,
   "Three.js": `${SIMPLE}/threedotjs/000000`,
+  Blender: `${SIMPLE}/blender/E87D0D`,
   React: `${SIMPLE}/react/61DAFB`,
   "React.js": `${SIMPLE}/react/61DAFB`,
   Vue: `${SIMPLE}/vuedotjs/4FC08D`,
@@ -106,6 +107,8 @@ export function techIconSrc(name: string): string | null {
   if (lower.includes("github")) return ICONS.GitHub!;
   if (lower.includes("redis")) return ICONS.Redis!;
   if (lower.includes("mysql")) return ICONS.MySQL!;
+  if (lower.includes("three")) return ICONS["Three.js"]!;
+  if (lower.includes("blender")) return ICONS.Blender!;
 
   return null;
 }

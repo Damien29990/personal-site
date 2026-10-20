@@ -70,8 +70,19 @@ export const site = {
   ],
   projects: [
     {
-      slug: "anshin",
+      slug: "sci-fi-airlock",
       index: "01",
+      name: "Sci-Fi Airlock",
+      type: "Interactive 3D model",
+      description:
+        "A playable cabin you can walk: open the blast door and the airlock, move the astronaut, and look through the corridor. Built with AI and Blender, then run in the browser with Three.js and light tracing.",
+      stack: ["Three.js", "Blender", "Cursor"],
+      image: "/projects/sci-fi-airlock.jpg",
+      href: "https://damien29990.github.io/sci-fi-airlock/",
+    },
+    {
+      slug: "anshin",
+      index: "02",
       name: "Anshin",
       type: "Frontend UI study",
       description:
@@ -81,7 +92,7 @@ export const site = {
     },
     {
       slug: "wordle",
-      index: "02",
+      index: "03",
       name: "Wordle",
       type: "Web game study",
       description:
@@ -91,7 +102,7 @@ export const site = {
     },
     {
       slug: "bonsai",
-      index: "03",
+      index: "04",
       name: "Bonsai",
       type: "Frontend study",
       description:
@@ -157,7 +168,7 @@ export const site = {
   skills: [
     {
       group: "Web frontend",
-      items: ["React", "Next.js", "Vue", "TypeScript", "JavaScript", "HTML", "CSS"],
+      items: ["React", "Next.js", "Vue", "TypeScript", "JavaScript", "HTML", "CSS", "Three.js"],
     },
     {
       group: "Backend",
@@ -190,7 +201,7 @@ export const site = {
     },
     {
       group: "Tools",
-      items: ["Cursor", "VS Code", "GitHub", "Obsidian"],
+      items: ["Cursor", "VS Code", "GitHub", "Obsidian", "Blender"],
     },
   ],
   contact: {
